@@ -3,16 +3,19 @@ package main
 import (
 	"math/rand"
 	"strconv"
+	"time"
 )
 
 var books []Book
 
 //Book is book object
 type Book struct {
-	ID     string  `json:id`
-	Isbn   string  `json:isbn`
-	Title  string  `json:title`
-	Author *Author `json:author`
+	ID           string  `json:id`
+	Isbn         string  `json:isbn`
+	Title        string  `json:title`
+	Author       *Author `json:author`
+	ModifiedDate time.Time
+	CreatedDate  time.Time
 }
 
 //author is book's author
@@ -42,10 +45,12 @@ func appendBooks() {
 
 func mockBook(title, isbn, authorName, authorLastName string) Book {
 	book := Book{
-		ID:     getRandomID(),
-		Isbn:   isbn,
-		Title:  title,
-		Author: &Author{FirstName: authorName, LastName: authorLastName},
+		ID:           getRandomID(),
+		Isbn:         isbn,
+		Title:        title,
+		Author:       &Author{FirstName: authorName, LastName: authorLastName},
+		CreatedDate:  time.Now(),
+		ModifiedDate: time.Now(),
 	}
 	return book
 }
@@ -55,23 +60,29 @@ func getRandomID() string {
 	return strconv.Itoa(res)
 }
 
-func appendNewBook(book Book) Book {
+func addNewBookData(book Book) Book {
 	book.ID = getRandomID()
+	book.CreatedDate = time.Now()
+	book.ModifiedDate = time.Now()
 	books = append(books, book)
 
 	return book
 }
 
-func updateTheBook(book Book) *Book {
+func updateBookData(book Book) *Book {
 	indexToReplace := -1
+	var bookCreatedDate time.Time
 loop:
 	for index, item := range books {
 		if item.ID == book.ID {
 			indexToReplace = index
+			bookCreatedDate = item.CreatedDate
 			break loop
 		}
 	}
 	if indexToReplace >= 0 {
+		book.CreatedDate = bookCreatedDate
+		book.ModifiedDate = time.Now()
 		books[indexToReplace] = book
 		return &books[indexToReplace]
 	}
@@ -79,7 +90,7 @@ loop:
 
 }
 
-func deleteTheBook(id string) bool {
+func deleteBookData(id string) bool {
 	for index, item := range books {
 		if item.ID == id {
 			books = append(books[:index], books[index+1:]...)

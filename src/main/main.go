@@ -50,7 +50,7 @@ func createBook(w http.ResponseWriter, r *http.Request) {
 	writeResponseHeaders(w)
 	var book Book
 	_ = json.NewDecoder(r.Body).Decode(&book)
-	newBook := appendNewBook(book)
+	newBook := addNewBookData(book)
 	writeJSONResponse(w, newBook)
 }
 func updateBook(w http.ResponseWriter, r *http.Request) {
@@ -58,7 +58,7 @@ func updateBook(w http.ResponseWriter, r *http.Request) {
 	var book Book
 	_ = json.NewDecoder(r.Body).Decode(&book)
 
-	updatedBook := updateTheBook(book)
+	updatedBook := updateBookData(book)
 
 	if nil != updatedBook {
 		writeJSONResponse(w, updatedBook)
@@ -70,7 +70,7 @@ func deleteBook(w http.ResponseWriter, r *http.Request) {
 	writeResponseHeaders(w)
 	id := getIDParams(r)
 
-	success := deleteTheBook(id)
+	success := deleteBookData(id)
 	if success {
 		writeJSONResponse(w, WebResponse{"Successfully deleted"})
 	}
