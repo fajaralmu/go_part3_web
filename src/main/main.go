@@ -37,26 +37,48 @@ type Author struct {
 
 var books []Book
 
-func setContentTypeJson(w http.ResponseWriter) {
+func writeResponseHeaders(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")
 
 }
 
 func getBooks(w http.ResponseWriter, r *http.Request) {
-	setContentTypeJson(w)
+	writeResponseHeaders(w)
 	println("get books")
-	writeJsonResponse(w, books)
+	writeJSONResponse(w, books)
 }
-func getBook(w http.ResponseWriter, r *http.Request) {
-	setContentTypeJson(w)
 
+func getIDParams(r *http.Request) string {
 	params := mux.Vars(r)
 	id := params["id"]
+	return id
+}
 
-	println(" etBooks BY ID:", id)
+func getBook(w http.ResponseWriter, r *http.Request) {
+
+	id := getIDParams(r)
+
+	println("get Books BY ID:", id)
 
 	book := getBookByID(id)
-	writeJsonResponse(w, book)
+
+	if nil == book {
+		//	w.WriteHeader(404)
+		writeResponseHeaders(w)
+		writeErrorMsg(w, "Not Found")
+	} else {
+		writeResponseHeaders(w)
+		writeJSONResponse(w, book)
+	}
+}
+
+//WebResponse is response object
+type WebResponse struct {
+	Message string `json:message`
+}
+
+func writeErrorMsg(w http.ResponseWriter, msg string) {
+	writeJSONResponse(w, WebResponse{msg})
 }
 
 func getBookByID(id string) *Book {
@@ -69,23 +91,52 @@ func getBookByID(id string) *Book {
 	return nil
 }
 
-func writeJsonResponse(w http.ResponseWriter, obj interface{}) {
+func writeJSONResponse(w http.ResponseWriter, obj interface{}) {
 	json.NewEncoder(w).Encode(obj)
 }
 
 func createBook(w http.ResponseWriter, r *http.Request) {
-	setContentTypeJson(w)
+	writeResponseHeaders(w)
 	var book Book
 	_ = json.NewDecoder(r.Body).Decode(&book)
 	book.ID = getRandomID()
 	books = append(books, book)
-	writeJsonResponse(w, book)
+	writeJSONResponse(w, book)
 }
 func updateBook(w http.ResponseWriter, r *http.Request) {
+	writeResponseHeaders(w)
+	println("will update book")
+	var book Book
+	_ = json.NewDecoder(r.Body).Decode(&book)
 
+	indexToReplace := -1
+loop:
+	for index, item := range books {
+		if item.ID == book.ID {
+			indexToReplace = index
+			break loop
+		}
+	}
+	if indexToReplace >= 0 {
+		books[indexToReplace] = book
+		writeJSONResponse(w, books[indexToReplace])
+	} else {
+		writeErrorMsg(w, "Error updating book")
+	}
 }
 func deleteBook(w http.ResponseWriter, r *http.Request) {
+	writeResponseHeaders(w)
+	id := getIDParams(r)
+	println("will delete by id: ", id)
+	for index, item := range books {
+		if item.ID == id {
+			books = append(books[:index], books[index+1:]...)
+			writeJSONResponse(w, WebResponse{"Successfully deleted"})
+			return
+		}
+	}
 
+	writeJSONResponse(w, WebResponse{"book not found"})
 }
 
 func (app *App) registerApis() {
