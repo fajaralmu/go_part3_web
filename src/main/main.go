@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"log"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"text/template"
@@ -36,21 +37,29 @@ type Author struct {
 
 var books []Book
 
-func getBooks(w http.ResponseWriter, r *http.Request) {
+func setContentTypeJson(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")
-	println("===getBooks===")
-	json.NewEncoder(w).Encode(books)
-}
-func getBook(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	println("===getBooks===")
-	params := mux.Vars(r)
-	id := params["id"]
-	book := getBookById(id)
-	json.NewEncoder(w).Encode(book)
+
 }
 
-func getBookById(id string) *Book {
+func getBooks(w http.ResponseWriter, r *http.Request) {
+	setContentTypeJson(w)
+	println("get books")
+	writeJsonResponse(w, books)
+}
+func getBook(w http.ResponseWriter, r *http.Request) {
+	setContentTypeJson(w)
+
+	params := mux.Vars(r)
+	id := params["id"]
+
+	println(" etBooks BY ID:", id)
+
+	book := getBookByID(id)
+	writeJsonResponse(w, book)
+}
+
+func getBookByID(id string) *Book {
 	for i := 0; i < len(books); i++ {
 		b := books[i]
 		if b.ID == id {
@@ -60,8 +69,17 @@ func getBookById(id string) *Book {
 	return nil
 }
 
-func createBook(w http.ResponseWriter, r *http.Request) {
+func writeJsonResponse(w http.ResponseWriter, obj interface{}) {
+	json.NewEncoder(w).Encode(obj)
+}
 
+func createBook(w http.ResponseWriter, r *http.Request) {
+	setContentTypeJson(w)
+	var book Book
+	_ = json.NewDecoder(r.Body).Decode(&book)
+	book.ID = getRandomID()
+	books = append(books, book)
+	writeJsonResponse(w, book)
 }
 func updateBook(w http.ResponseWriter, r *http.Request) {
 
@@ -108,7 +126,7 @@ func (app *App) homeRoute(w http.ResponseWriter, r *http.Request) {
 func appendBooks() {
 	for i := 0; i < 10; i++ {
 		index := strconv.Itoa(i)
-		b := mockBook("Book #"+index, index, "12345"+index, "Fajar", "AM")
+		b := mockBook("Book #"+index, "12345"+index, "Fajar", "AM")
 		books = append(books, b)
 	}
 	println("BOOK SIZE: ", len(books))
@@ -122,12 +140,17 @@ func main() {
 	// app.start()
 }
 
-func mockBook(title, id, isbn, authorName, authorLastName string) Book {
+func mockBook(title, isbn, authorName, authorLastName string) Book {
 	book := Book{
-		ID:     id,
+		ID:     getRandomID(),
 		Isbn:   isbn,
 		Title:  title,
 		Author: &Author{FirstName: authorName, LastName: authorLastName},
 	}
 	return book
+}
+
+func getRandomID() string {
+	res := rand.Intn(10000000) + 10000000
+	return strconv.Itoa(res)
 }
