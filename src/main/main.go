@@ -14,13 +14,6 @@ type App struct {
 	router *mux.Router
 }
 
-func (app *App) start() {
-
-	println("__will start app__")
-	http.HandleFunc("/home", app.homeRoute)
-	http.ListenAndServe(":8080", nil)
-}
-
 func getBooks(w http.ResponseWriter, r *http.Request) {
 	writeResponseHeaders(w)
 	println("get books")
@@ -53,6 +46,7 @@ func createBook(w http.ResponseWriter, r *http.Request) {
 	newBook := addNewBookData(book)
 	writeJSONResponse(w, newBook)
 }
+
 func updateBook(w http.ResponseWriter, r *http.Request) {
 	writeResponseHeaders(w)
 	var book Book
@@ -88,7 +82,12 @@ func (app *App) registerApis() {
 	app.router.HandleFunc("/api/books/{id}", updateBook).Methods("PUT")
 	app.router.HandleFunc("/api/books/{id}", deleteBook).Methods("DELETE")
 
-	log.Fatal(http.ListenAndServe(":80", app.router))
+}
+
+func (app *App) registerWebPages() {
+
+	println("Register Web Pages")
+	app.router.HandleFunc("/home", app.homeRoute).Methods("GET")
 }
 
 type homePageData struct {
@@ -97,7 +96,9 @@ type homePageData struct {
 }
 
 func (app *App) homeRoute(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("templates/home.html")
+	println("homeRoute")
+
+	tmpl, err := template.ParseFiles("../../templates/home.html")
 
 	if err == nil {
 		pageData := homePageData{
@@ -106,9 +107,8 @@ func (app *App) homeRoute(w http.ResponseWriter, r *http.Request) {
 		}
 		tmpl.Execute(w, pageData)
 	} else {
-		w.WriteHeader(404)
-		w.Write([]byte("Not Found"))
-
+		writeResponseHeaders(w)
+		writeErrorMsg(w, "Requested Web Page Not Found")
 	}
 }
 
@@ -117,5 +117,7 @@ func main() {
 
 	var app App = App{}
 	app.registerApis()
+	app.registerWebPages()
+	log.Fatal(http.ListenAndServe(":80", app.router))
 	// app.start()
 }
