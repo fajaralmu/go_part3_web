@@ -89,7 +89,8 @@ func (app *App) registerWebPages() {
 
 	println("Register Web Pages")
 	app.router.HandleFunc("/home", app.homeRoute).Methods("GET")
-	app.router.PathPrefix("/static/").Handler(http.FileServer(http.Dir("public/")))
+	fs := http.StripPrefix("/static/", http.FileServer(http.Dir("./public/")))
+	app.router.PathPrefix("/static/").Handler(fs)
 }
 
 func customFileServer(root http.FileSystem) http.Handler {
@@ -125,6 +126,6 @@ func main() {
 	var app App = App{}
 	app.registerApis()
 	app.registerWebPages()
-	log.Fatal(http.ListenAndServe(":80", app.router))
+	log.Fatal(http.ListenAndServe(":8080", app.router))
 	// app.start()
 }
